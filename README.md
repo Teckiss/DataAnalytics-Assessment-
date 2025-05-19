@@ -22,18 +22,42 @@ Solution: Used LEFT JOIN instead of INNER JOIN to ensure all users are included,
 # 2. Transaction Frequency Analysis
 ## Scenario: Track how often customers transact and determine their engagement levels. 
 ## Approach:
+Aggregating Monthly Transactions
 
-Counted the number of transactions per customer (COUNT(transaction_reference)).
+ Used DATE_FORMAT(transaction_date, '%Y-%m') to group transactions by month.
 
-Categorized customers based on frequency (e.g., low, medium, high transaction volume).
+Counted transactions per customer for each month (COUNT(transaction_id)).
 
-Used TIMESTAMPDIFF(MONTH, transaction_date, CURDATE()) to measure transaction intervals.
+ Calculating Average Transactions per Month
+
+Averaged transactions per customer (AVG(transactions_per_month)).
+
+Used a CASE statement to classify users into High Frequency (≥10), Medium Frequency (3-9), Low Frequency (≤2) categories.
+
+ Joining with users_customuser 
+
+Included inactive customers by performing a LEFT JOIN between users_customuser and savings_savingsaccount.
+
+Used COALESCE(AVG(transactions_per_month), 0) to replace NULL transaction counts with zero.
+
+Computing Category-wise Metrics
+
+Counted customers per frequency category (COUNT(customer_id)).
+
+Calculated the average number of transactions per category (ROUND(AVG(avg_transactions_per_month), 2)).
 
 ## Challenges & Solutions:
+Challenge: Transaction frequency fluctuated across months.
 
-Users with inconsistent transaction patterns caused skewed frequency analysis. 
+Some customers had high transactions in some months but low transactions in others, skewing their categorization. 
 
-Solution: Used rolling averages (AVG(transactions_per_month) OVER (PARTITION BY owner_id)) to smooth fluctuations in frequency.
+Solution: Used AVG(transactions_per_month) instead of single-month counts to smooth out variations.
+
+Challenge: Sorting categories logically in output.
+
+MySQL’s default sorting didn’t ensure logical order (High → Medium → Low). 
+
+Solution: Used ORDER BY FIELD(frequency_category, 'High Frequency', 'Medium Frequency', 'Low Frequency') to maintain proper order.
 
 # 3️. Account Inactivity Alert
 ## Scenario: Flag accounts with no inflow transactions for over a year (365 days). 
